@@ -9,6 +9,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <string>
 #include "hal/gpiobus.h"
 #include "hal/sbc_version.h"
 #include "hal/systimer.h"
@@ -393,10 +394,12 @@ bool GPIOBUS::PollSelectEvent()
 #else
     GPIO_FUNCTION_TRACE
     errno = 0;
-
-    if (epoll_event epev; epoll_wait(epfd, &epev, 1, -1) <= 0) {
-        spdlog::warn("epoll_wait failed");
-        return false;
+    epoll_event epev;
+    int result = epoll_wait(epfd, &epev, 1, -1);
+    if (result <= 0) {
+        // spdlog::warn("epoll_wait failed");
+	// spdlog::warn("error_code: " + std::to_string(result));
+	return false;
     }
 
     if (gpioevent_data gpev; read(selevreq.fd, &gpev, sizeof(gpev)) < 0) {

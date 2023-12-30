@@ -27,6 +27,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <string>
 
 //---------------------------------------------------------------------------
 //
@@ -77,7 +78,13 @@ bool GPIOBUS_Raspberry::Init(mode_e mode)
 #endif
 
     // Get the base address
+
     baseaddr = (uint32_t)bcm_host_get_peripheral_address();
+    if (baseaddr == 16) {
+	baseaddr = 0x7c000000;
+	// unsigned offset = baseaddr % 4000;
+	// baseaddr = baseaddr - offset;
+    }
 
     // Open /dev/mem
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
@@ -86,21 +93,25 @@ bool GPIOBUS_Raspberry::Init(mode_e mode)
         return false;
     }
 
+    spdlog::warn("Baseaddr is: " + std::to_string(baseaddr));
+
     // Map peripheral region memory
     void *map = mmap(NULL, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, baseaddr);
     if (map == MAP_FAILED) {
-        spdlog::error("Error: Unable to map memory: "+ string(strerror(errno)));
+        spdlog::error("Error: Unable to map memory: "+ std::to_string(errno));
         close(fd);
         return false;
     }
-
+	
+    spdlog::warn("Baseaddr is: " + std::to_string(baseaddr));
     // Determine the type of raspberry pi from the base address
     if (baseaddr == 0xfe000000) {
         rpitype = 4;
     } else if (baseaddr == 0x3f000000) {
         rpitype = 2;
-    } else {
-        rpitype = 1;
+    } else if (baseaddr == 0x7c000000) {
+        rpitype = 4;
+	// rpitype = 5;
     }
 
     // GPIO
@@ -183,7 +194,7 @@ bool GPIOBUS_Raspberry::Init(mode_e mode)
     // Initialize SEL signal interrupt
 #ifdef USE_SEL_EVENT_ENABLE
     // GPIO chip open
-    fd = open("/dev/gpiochip0", 0);
+    fd = open("/dev/gpiochip4", 0);
     if (fd == -1) {
         spdlog::error("Unable to open /dev/gpiochip0. If PiSCSI is running, please shut it down first.");
         return false;

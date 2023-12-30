@@ -36,7 +36,7 @@ using namespace std;
 void SysTimer_Raspberry::Init()
 {
     // Get the base address
-    const auto baseaddr = SBC_Version::GetPeripheralAddress();
+    const auto baseaddr = 0x7c000000; // TODO: FIX BC_Version::GetPeripheralAddress();
 
     // Open /dev/mem
     int mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
